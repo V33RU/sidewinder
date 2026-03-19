@@ -1,0 +1,54 @@
+{
+  "class": "wifi_nosql",
+  "name": "NoSQL / LDAP Injection via SSID",
+  "severity": "high",
+  "description": "SSID interpolated into MongoDB/LDAP queries without parameterized queries",
+  "cwe": "CWE-943",
+  "zero_click": true,
+  "source_patterns": {
+    "python": [
+      "json\\.loads\\s*\\(.*\\+.*ssid",
+      "\\.find\\s*\\(.*ssid",
+      "\\.find_one\\s*\\(.*ssid",
+      "\\.update\\s*\\(.*ssid",
+      "\\.aggregate\\s*\\(.*ssid",
+      "\\.delete_many\\s*\\(.*ssid",
+      "\\.insert_one\\s*\\(.*json\\.loads.*ssid",
+      "ldap\\.search_s\\s*\\(.*ssid"
+    ],
+    "javascript": [
+      "\\.find\\s*\\(.*ssid",
+      "\\.findOne\\s*\\(.*ssid",
+      "\\.updateOne\\s*\\(.*ssid",
+      "\\.deleteOne\\s*\\(.*ssid",
+      "JSON\\.parse\\s*\\(.*ssid",
+      "\\.collection\\s*\\(.*\\)\\.insert.*ssid"
+    ],
+    "c": [
+      "sprintf\\s*\\(.*\\(ssid=%s\\)",
+      "ldap_search_s\\s*\\(.*ssid",
+      "ldap_search_ext_s\\s*\\(.*ssid",
+      "ldap_modify_s\\s*\\(.*ssid"
+    ],
+    "go": [
+      "bson\\.M\\{.*ssid",
+      "bson\\.D\\{.*ssid",
+      "\\.Find\\s*\\(.*ssid",
+      "\\.FindOne\\s*\\(.*ssid"
+    ],
+    "ruby": [
+      "\\.where\\s*\\(.*ssid.*\\$",
+      "\\.find\\s*\\(.*ssid"
+    ]
+  },
+  "safe_patterns": [
+    "\\{.*:\\s*ssid\\s*\\}",
+    "bson\\.M\\{\"\\w+\":\\s*ssid\\}"
+  ],
+  "test_payloads": [
+    "{\"$gt\":\"\"}",
+    "{\"$ne\":null}",
+    "{\"$regex\":\".*\"}",
+    "*)(uid=*))(|(uid=*"
+  ]
+}
