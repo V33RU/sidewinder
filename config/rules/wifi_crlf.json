@@ -1,0 +1,52 @@
+{
+  "class": "wifi_crlf",
+  "name": "CRLF / HTTP Header Injection via SSID",
+  "severity": "medium",
+  "description": "SSID reflected in HTTP response headers without stripping CR/LF characters",
+  "cwe": "CWE-113",
+  "zero_click": false,
+  "source_patterns": {
+    "python": [
+      "response\\.headers\\[.*\\]\\s*=.*ssid",
+      "add_header\\s*\\(.*ssid",
+      "set_header\\s*\\(.*ssid",
+      "Response\\s*\\(.*headers.*ssid"
+    ],
+    "php": [
+      "header\\s*\\(.*\\$ssid",
+      "setcookie\\s*\\(.*\\$ssid"
+    ],
+    "c": [
+      "sprintf\\s*\\(.*HTTP.*ssid",
+      "snprintf\\s*\\(.*Location.*ssid",
+      "snprintf\\s*\\(.*Set-Cookie.*ssid",
+      "snprintf\\s*\\(.*Content-.*ssid"
+    ],
+    "javascript": [
+      "res\\.setHeader\\s*\\(.*ssid",
+      "res\\.writeHead\\s*\\(.*ssid",
+      "res\\.set\\s*\\(.*ssid",
+      "res\\.header\\s*\\(.*ssid",
+      "res\\.cookie\\s*\\(.*ssid"
+    ],
+    "go": [
+      "w\\.Header\\(\\)\\.Set\\s*\\(.*ssid",
+      "w\\.Header\\(\\)\\.Add\\s*\\(.*ssid",
+      "http\\.SetCookie\\s*\\(.*ssid"
+    ],
+    "ruby": [
+      "response\\.headers\\[.*\\]\\s*=.*ssid",
+      "response\\.set_cookie\\s*\\(.*ssid"
+    ]
+  },
+  "safe_patterns": [
+    "replace\\s*\\(.*\\\\r\\\\n.*ssid",
+    "strip\\s*\\(.*ssid",
+    "re\\.sub\\s*\\(.*\\\\r.*\\\\n.*ssid"
+  ],
+  "test_payloads": [
+    "\\r\\nX-Injected: true",
+    "%0d%0aSet-Cookie:a=1",
+    "\\r\\nLocation: //evil"
+  ]
+}
