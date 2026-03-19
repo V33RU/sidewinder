@@ -1,0 +1,95 @@
+{
+  "class": "wifi_serial",
+  "name": "Serialization/Configuration Injection via SSID",
+  "severity": "high",
+  "description": "SSID interpolated into JSON, XML, SQL, INI, YAML without escaping format metacharacters",
+  "cwe": "CWE-94",
+  "zero_click": true,
+  "source_patterns": {
+    "c": [
+      "sprintf\\s*\\(.*INSERT.*ssid",
+      "sprintf\\s*\\(.*SELECT.*ssid",
+      "sprintf\\s*\\(.*VALUES.*ssid",
+      "sqlite3_exec\\s*\\(.*ssid",
+      "sprintf\\s*\\(.*\".*ssid.*\".*\\)",
+      "sqlite3_prepare\\s*\\(.*ssid",
+      "sqlite3_prepare_v2\\s*\\(.*ssid",
+      "mysql_query\\s*\\(.*ssid",
+      "xmlParseMemory\\s*\\(.*ssid",
+      "xmlParseDoc\\s*\\(.*ssid",
+      "xmlReadMemory\\s*\\(.*ssid"
+    ],
+    "python": [
+      "f['\"].*\\{.*ssid.*\\}.*['\"].*json",
+      "f['\"].*INSERT.*\\{.*ssid.*\\}",
+      "f['\"].*SELECT.*\\{.*ssid.*\\}",
+      "\\.format\\s*\\(.*ssid.*\\).*json",
+      "\\.format\\s*\\(.*ssid.*\\).*sql",
+      "json\\.loads\\s*\\(.*\\+.*ssid",
+      "cursor\\.execute\\s*\\(.*%.*ssid",
+      "cursor\\.execute\\s*\\(.*f['\"].*ssid",
+      "yaml\\.load\\s*\\(.*ssid",
+      "yaml\\.unsafe_load\\s*\\(.*ssid",
+      "ET\\.fromstring\\s*\\(.*ssid",
+      "configparser.*write.*ssid",
+      "pickle\\.loads\\s*\\(.*ssid",
+      "marshal\\.loads\\s*\\(.*ssid"
+    ],
+    "javascript": [
+      "JSON\\.parse\\s*\\(.*\\+.*ssid",
+      "eval\\s*\\(.*ssid",
+      "new\\s+Function\\s*\\(.*ssid",
+      "serialize\\s*\\(.*ssid",
+      "deserialize\\s*\\(.*ssid"
+    ],
+    "php": [
+      "mysql_query\\s*\\(.*\\$ssid",
+      "mysqli_query\\s*\\(.*\\$ssid",
+      "->query\\s*\\(.*\\$ssid",
+      "simplexml_load_string\\s*\\(.*\\$ssid",
+      "unserialize\\s*\\(.*\\$ssid",
+      "json_decode\\s*\\(.*\\$ssid"
+    ],
+    "go": [
+      "db\\.Exec\\s*\\(.*ssid",
+      "db\\.Query\\s*\\(.*ssid",
+      "db\\.QueryRow\\s*\\(.*ssid",
+      "fmt\\.Sprintf\\s*\\(.*INSERT.*ssid",
+      "fmt\\.Sprintf\\s*\\(.*SELECT.*ssid",
+      "xml\\.Unmarshal\\s*\\(.*ssid",
+      "json\\.Unmarshal\\s*\\(.*ssid"
+    ],
+    "ruby": [
+      "\\.execute\\s*\\(.*ssid",
+      "\\.where\\s*\\(.*ssid",
+      "ActiveRecord.*ssid.*interpolat",
+      "YAML\\.load\\s*\\(.*ssid",
+      "Marshal\\.load\\s*\\(.*ssid"
+    ],
+    "perl": [
+      "->do\\s*\\(.*ssid",
+      "->prepare\\s*\\(.*ssid",
+      "DBI.*execute.*ssid"
+    ]
+  },
+  "binary_signatures": {
+    "dangerous_imports": ["sqlite3_exec", "sqlite3_prepare", "sqlite3_prepare_v2", "mysql_query", "mysql_real_query", "xmlParseMemory", "xmlParseDoc", "xmlReadMemory"],
+    "context_strings": ["INSERT INTO", "SELECT", "VALUES", "wifi_history", "scan_result", "ssid"]
+  },
+  "safe_patterns": [
+    "parameterized\\s*query",
+    "\\?.*bind",
+    "prepared\\s*statement",
+    "json\\.dumps\\s*\\(.*ssid",
+    "json_encode\\s*\\(.*ssid",
+    "yaml\\.safe_load\\s*\\(.*ssid",
+    "cursor\\.execute\\s*\\(.*\\?.*ssid",
+    "sqlite3_bind"
+  ],
+  "test_payloads": [
+    "\",\"cmd\":\"reboot\"}",
+    "'; DROP TABLE wifi;--",
+    "</n><cmd>reboot</cmd>",
+    "\\\"admin\\\":true"
+  ]
+}
