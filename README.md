@@ -158,14 +158,14 @@ Scanning source code: tests/test_source/
 │ CRITICAL │ wifi_cmd       │ vulnerable_c.c:13│ snprintf(cmd, "iwconfig ...  │
 │ CRITICAL │ wifi_overflow  │ vulnerable_c.c:33│ strcpy(local_ssid, ssid);    │
 │ CRITICAL │ wifi_fmt       │ vulnerable_c.c:50│ printf(ssid);                │
-│ CRITICAL │ wifi_jndi      │ vuln_java.java:8 │ logger.info("AP: " + ssid); │
+│ CRITICAL │ wifi_jndi      │ vuln_java.java:8 │ logger.info("AP: " + ssid);  │
 │ HIGH     │ wifi_xss       │ vuln_web.html:5  │ {{ ssid }}                   │
 │ HIGH     │ wifi_serial    │ vulnerable_c.c:61│ sprintf(query, "INSERT ...   │
 │ MEDIUM   │ wifi_enc       │ vuln_python.py:36│ unicodedata.normalize(ssid)  │
 └──────────┴────────────────┴──────────────────┴──────────────────────────────┘
 
 ╭──────────────────────────── Scan Summary ─────────────────────────────╮
-│ Total: 65 | Critical: 42 | High: 18 | Medium: 5 | Low: 0 | Files: 4 │
+│ Total: 65 | Critical: 42 | High: 18 | Medium: 5 | Low: 0 | Files: 4   │
 ╰───────────────────────────────────────────────────────────────────────╯
 ```
 
