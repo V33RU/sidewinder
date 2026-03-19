@@ -1,0 +1,60 @@
+{
+  "class": "wifi_esc",
+  "name": "Terminal Escape Injection via SSID",
+  "severity": "medium",
+  "description": "SSID written to terminal/serial/log output without ANSI escape sequence filtering",
+  "cwe": "CWE-150",
+  "zero_click": true,
+  "source_patterns": {
+    "c": [
+      "printf\\s*\\(.*\"%s\".*ssid",
+      "fprintf\\s*\\(.*\"%s\".*ssid",
+      "Serial\\.print\\w*\\s*\\(.*ssid",
+      "puts\\s*\\(.*ssid",
+      "fputs\\s*\\(.*ssid",
+      "write\\s*\\(\\s*(?:1|2|STDOUT|STDERR).*ssid",
+      "syslog\\s*\\(.*ssid",
+      "ESP_LOG\\w*\\s*\\(.*ssid"
+    ],
+    "python": [
+      "print\\s*\\(.*ssid",
+      "sys\\.stdout\\.write\\s*\\(.*ssid",
+      "sys\\.stderr\\.write\\s*\\(.*ssid",
+      "logging\\.\\w+\\s*\\(.*ssid",
+      "logger\\.\\w+\\s*\\(.*ssid"
+    ],
+    "go": [
+      "fmt\\.Print\\w*\\s*\\(.*ssid",
+      "log\\.Print\\w*\\s*\\(.*ssid",
+      "log\\.Fatal\\w*\\s*\\(.*ssid"
+    ],
+    "ruby": [
+      "puts\\s+.*ssid",
+      "print\\s+.*ssid",
+      "warn\\s+.*ssid",
+      "Logger\\.\\w+\\s*.*ssid"
+    ],
+    "perl": [
+      "print\\s+.*ssid",
+      "warn\\s+.*ssid",
+      "say\\s+.*ssid"
+    ],
+    "shell": [
+      "echo\\s+.*ssid",
+      "printf\\s+.*ssid"
+    ]
+  },
+  "safe_patterns": [
+    "strip_ansi\\s*\\(.*ssid",
+    "re\\.sub\\s*\\(.*\\\\x1b.*ssid",
+    "escape_ansi\\s*\\(.*ssid",
+    "sanitize_for_terminal\\s*\\(.*ssid",
+    "strings\\.Map\\s*\\(.*ssid"
+  ],
+  "test_payloads": [
+    "\\x1b[2J\\x1b[HPWNED",
+    "\\x1b]2;HACKED\\x07",
+    "\\x1b[6n",
+    "\\r\\x1b[K[OK] All normal"
+  ]
+}
