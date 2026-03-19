@@ -1,0 +1,102 @@
+{
+  "class": "wifi_cmd",
+  "name": "Command Injection via SSID",
+  "severity": "critical",
+  "description": "SSID interpolated into shell command without sanitization",
+  "cwe": "CWE-78",
+  "zero_click": true,
+  "source_patterns": {
+    "c": [
+      "system\\s*\\(.*ssid",
+      "popen\\s*\\(.*ssid",
+      "execl?p?\\s*\\(.*ssid",
+      "execv?p?e?\\s*\\(.*ssid",
+      "snprintf\\s*\\(.*\".*iwconfig.*%s",
+      "snprintf\\s*\\(.*\".*iwpriv.*%s",
+      "snprintf\\s*\\(.*\".*nmcli.*%s",
+      "snprintf\\s*\\(.*\".*uci.*%s",
+      "snprintf\\s*\\(.*\".*wpa_cli.*%s",
+      "sprintf\\s*\\(.*\".*essid.*%s",
+      "sprintf\\s*\\(.*\".*iwlist.*%s",
+      "dlopen\\s*\\(.*ssid"
+    ],
+    "python": [
+      "os\\.system\\s*\\(.*ssid",
+      "os\\.popen\\s*\\(.*ssid",
+      "subprocess\\.call\\s*\\(.*ssid.*shell\\s*=\\s*True",
+      "subprocess\\.run\\s*\\(.*ssid.*shell\\s*=\\s*True",
+      "subprocess\\.Popen\\s*\\(.*ssid.*shell\\s*=\\s*True",
+      "subprocess\\.check_output\\s*\\(.*ssid.*shell\\s*=\\s*True",
+      "subprocess\\.check_call\\s*\\(.*ssid.*shell\\s*=\\s*True",
+      "commands\\.getoutput\\s*\\(.*ssid",
+      "commands\\.getstatusoutput\\s*\\(.*ssid"
+    ],
+    "javascript": [
+      "exec\\s*\\(.*ssid",
+      "execSync\\s*\\(.*ssid",
+      "child_process.*exec.*ssid",
+      "spawn\\s*\\(.*ssid.*shell\\s*:\\s*true",
+      "execFile\\s*\\(.*ssid",
+      "execFileSync\\s*\\(.*ssid"
+    ],
+    "php": [
+      "exec\\s*\\(.*\\$ssid",
+      "system\\s*\\(.*\\$ssid",
+      "passthru\\s*\\(.*\\$ssid",
+      "shell_exec\\s*\\(.*\\$ssid",
+      "popen\\s*\\(.*\\$ssid",
+      "proc_open\\s*\\(.*\\$ssid",
+      "pcntl_exec\\s*\\(.*\\$ssid"
+    ],
+    "lua": [
+      "os\\.execute\\s*\\(.*ssid",
+      "io\\.popen\\s*\\(.*ssid"
+    ],
+    "go": [
+      "exec\\.Command\\s*\\(.*ssid",
+      "exec\\.CommandContext\\s*\\(.*ssid",
+      "os\\.StartProcess\\s*\\(.*ssid"
+    ],
+    "ruby": [
+      "system\\s*\\(.*ssid",
+      "exec\\s*\\(.*ssid",
+      "`.*ssid.*`",
+      "IO\\.popen\\s*\\(.*ssid",
+      "%x\\(.*ssid",
+      "Open3\\.(capture|popen).*ssid"
+    ],
+    "perl": [
+      "system\\s*\\(.*ssid",
+      "exec\\s*\\(.*ssid",
+      "`.*ssid.*`",
+      "qx\\(.*ssid",
+      "open\\s*\\(.*\\|.*ssid",
+      "IPC::Open[23].*ssid"
+    ],
+    "shell": [
+      "eval\\s+.*ssid",
+      "\\$\\(.*ssid",
+      "`.*ssid.*`"
+    ]
+  },
+  "binary_signatures": {
+    "dangerous_imports": ["system", "popen", "execl", "execlp", "execvp", "execve", "dlopen"],
+    "context_strings": ["iwconfig", "iwpriv", "nmcli", "wpa_cli", "uci set wireless", "essid", "iwlist"]
+  },
+  "safe_patterns": [
+    "shlex\\.quote\\s*\\(.*ssid",
+    "escapeshellarg\\s*\\(.*ssid",
+    "shellescape\\s*\\(.*ssid",
+    "Shellwords\\.escape\\s*\\(.*ssid",
+    "subprocess\\.[^(]*\\(\\[.*ssid",
+    "exec\\.Command\\s*\\([^,]+,.*ssid"
+  ],
+  "test_payloads": [
+    "|reboot|",
+    ";reboot;",
+    "$(reboot)",
+    "`reboot`",
+    "&reboot&",
+    "reboot\\nreboot"
+  ]
+}
