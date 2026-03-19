@@ -1,0 +1,75 @@
+{
+  "class": "wifi_path",
+  "name": "Path Traversal via SSID",
+  "severity": "high",
+  "description": "SSID used in filesystem path construction without sanitizing directory separators and parent references",
+  "cwe": "CWE-22",
+  "zero_click": true,
+  "source_patterns": {
+    "c": [
+      "fopen\\s*\\(.*ssid",
+      "open\\s*\\(.*ssid",
+      "sprintf\\s*\\(.*\\/.*ssid.*\\.log",
+      "sprintf\\s*\\(.*\\/.*ssid.*\\.conf",
+      "snprintf\\s*\\(.*\\/.*%s.*ssid",
+      "creat\\s*\\(.*ssid",
+      "access\\s*\\(.*ssid",
+      "stat\\s*\\(.*ssid",
+      "unlink\\s*\\(.*ssid",
+      "mkdir\\s*\\(.*ssid"
+    ],
+    "python": [
+      "open\\s*\\(.*ssid",
+      "Path\\s*\\(.*ssid",
+      "os\\.path\\.join\\s*\\(.*ssid",
+      "f['\"].*\\/.*\\{.*ssid.*\\}.*\\.(?:log|conf|txt|cfg)",
+      "os\\.makedirs\\s*\\(.*ssid",
+      "shutil\\.(copy|move)\\s*\\(.*ssid"
+    ],
+    "php": [
+      "fopen\\s*\\(.*\\$ssid",
+      "file_put_contents\\s*\\(.*\\$ssid",
+      "file_get_contents\\s*\\(.*\\$ssid",
+      "include\\s*\\(.*\\$ssid",
+      "require\\s*\\(.*\\$ssid",
+      "readfile\\s*\\(.*\\$ssid",
+      "unlink\\s*\\(.*\\$ssid"
+    ],
+    "go": [
+      "os\\.Open\\s*\\(.*ssid",
+      "os\\.Create\\s*\\(.*ssid",
+      "os\\.OpenFile\\s*\\(.*ssid",
+      "ioutil\\.ReadFile\\s*\\(.*ssid",
+      "ioutil\\.WriteFile\\s*\\(.*ssid",
+      "filepath\\.Join\\s*\\(.*ssid"
+    ],
+    "ruby": [
+      "File\\.open\\s*\\(.*ssid",
+      "File\\.read\\s*\\(.*ssid",
+      "File\\.write\\s*\\(.*ssid",
+      "IO\\.read\\s*\\(.*ssid"
+    ],
+    "perl": [
+      "open\\s*\\(.*ssid",
+      "sysopen\\s*\\(.*ssid"
+    ],
+    "shell": [
+      "cat\\s+.*ssid",
+      "touch\\s+.*ssid",
+      "mkdir\\s+.*ssid"
+    ]
+  },
+  "safe_patterns": [
+    "os\\.path\\.basename\\s*\\(.*ssid",
+    "Path\\(.*ssid\\)\\.name",
+    "basename\\s*\\(.*ssid",
+    "realpath\\s*\\(.*ssid",
+    "filepath\\.Base\\s*\\(.*ssid"
+  ],
+  "test_payloads": [
+    "../../../etc/shadow",
+    "....//....//etc/passwd",
+    "..%2f..%2f..%2fetc/pass",
+    "/proc/self/environ"
+  ]
+}
