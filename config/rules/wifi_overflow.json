@@ -1,0 +1,42 @@
+{
+  "class": "wifi_overflow",
+  "name": "Buffer Overflow via SSID",
+  "severity": "critical",
+  "description": "Fixed-size buffer receives SSID without length validation",
+  "cwe": "CWE-120",
+  "zero_click": true,
+  "source_patterns": {
+    "c": [
+      "sprintf\\s*\\(.*ssid",
+      "strcpy\\s*\\(.*ssid",
+      "strcat\\s*\\(.*ssid",
+      "memcpy\\s*\\(.*ssid.*ssid_len",
+      "memcpy\\s*\\(.*ie->ssid.*ie->ssid_len",
+      "strncpy\\s*\\(.*ssid.*ssid_len",
+      "char\\s+\\w+\\[(?:32|33|64|128|256)\\].*ssid",
+      "snprintf\\s*\\(.*sizeof\\s*\\(.*\\).*ssid",
+      "wcscpy\\s*\\(.*ssid",
+      "wcscat\\s*\\(.*ssid",
+      "strlcpy\\s*\\(.*ssid",
+      "strlcat\\s*\\(.*ssid",
+      "memmove\\s*\\(.*ssid",
+      "gets\\s*\\(.*ssid",
+      "scanf\\s*\\(.*ssid"
+    ]
+  },
+  "binary_signatures": {
+    "dangerous_imports": ["sprintf", "strcpy", "strcat", "memcpy", "strncpy", "gets", "wcscpy", "strlcpy", "memmove", "scanf"],
+    "context_strings": ["ssid", "SSID", "essid", "bss_info", "scan_result", "ie_data"],
+    "buffer_sizes": [32, 33, 64, 65, 128, 256]
+  },
+  "safe_patterns": [
+    "strncpy\\s*\\(.*ssid.*(?:32|IEEE80211_MAX_SSID_LEN)",
+    "strlcpy\\s*\\(.*ssid.*sizeof",
+    "snprintf\\s*\\(.*sizeof\\s*\\(.*\\).*\"%s\".*ssid"
+  ],
+  "test_payloads": [
+    "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+    "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+    "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+  ]
+}
