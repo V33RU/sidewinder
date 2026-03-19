@@ -1,0 +1,35 @@
+{
+  "class": "wifi_heap",
+  "name": "Heap/Memory Corruption Primitives via SSID",
+  "severity": "critical",
+  "description": "Heap metadata corruption via SSID overflow into adjacent dlmalloc/newlib chunk structures",
+  "cwe": "CWE-122",
+  "zero_click": true,
+  "source_patterns": {
+    "c": [
+      "malloc\\s*\\(\\s*(?:32|33|64)\\s*\\).*memcpy.*ssid",
+      "malloc\\s*\\(.*ssid_len\\s*\\).*(?:strcpy|memcpy)",
+      "calloc\\s*\\(.*\\).*memcpy.*ssid",
+      "realloc\\s*\\(.*\\).*memcpy.*ssid",
+      "pvPortMalloc\\s*\\(.*\\).*memcpy.*ssid",
+      "heap_caps_malloc\\s*\\(.*\\).*memcpy.*ssid",
+      "free\\s*\\(.*ssid.*\\).*(?:use|access|read|write)",
+      "malloc\\s*\\(.*\\).*sprintf.*ssid",
+      "k?malloc\\s*\\(.*\\).*memcpy.*ssid",
+      "kmalloc\\s*\\(.*\\).*copy_from_user.*ssid"
+    ]
+  },
+  "binary_signatures": {
+    "dangerous_imports": ["malloc", "calloc", "realloc", "free", "pvPortMalloc", "heap_caps_malloc", "memcpy", "kmalloc", "kfree"],
+    "context_strings": ["ssid", "SSID", "ie_data", "bss_desc", "scan_result"],
+    "allocators": ["dlmalloc", "newlib", "ptmalloc2", "jemalloc", "tcmalloc"]
+  },
+  "safe_patterns": [
+    "malloc\\s*\\(.*\\+ 1\\).*strncpy.*ssid",
+    "calloc\\s*\\(.*IEEE80211_MAX_SSID_LEN"
+  ],
+  "test_payloads": [
+    "\\x41\\x7f\\x41\\x7f\\x41\\x7f\\x41\\x7f\\x41\\x7f\\x41\\x7f\\x41\\x7f\\x41\\x7f\\x41\\x7f\\x41\\x7f\\x41\\x7f\\x41\\x7f\\x41\\x7f\\x41\\x7f\\x41\\x7f\\x41\\x7f",
+    "DEADBEEFDEADBEEFDEADBEEFDEADBEEF"
+  ]
+}
