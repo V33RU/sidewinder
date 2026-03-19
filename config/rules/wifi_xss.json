@@ -1,0 +1,92 @@
+{
+  "class": "wifi_xss",
+  "name": "XSS via SSID in Web Interface",
+  "severity": "high",
+  "description": "SSID rendered into HTML without escaping in IoT web admin interfaces",
+  "cwe": "CWE-79",
+  "zero_click": false,
+  "source_patterns": {
+    "html": [
+      "\\{\\{\\s*ssid\\s*\\}\\}",
+      "\\{\\{\\s*\\w*ssid\\w*\\s*\\}\\}",
+      "\\{\\{\\s*network\\.?name\\s*\\}\\}",
+      "<%=\\s*ssid\\s*%>",
+      "<%=\\s*\\w*ssid\\w*\\s*%>",
+      "<\\?=\\s*\\$ssid",
+      "<\\?=\\s*\\$\\w*ssid\\w*",
+      "document\\.write\\s*\\(.*ssid",
+      "innerHTML\\s*=.*ssid",
+      "insertAdjacentHTML\\s*\\(.*ssid",
+      "v-html\\s*=\\s*['\"].*ssid",
+      "\\[innerHTML\\]\\s*=\\s*['\"].*ssid",
+      "dangerouslySetInnerHTML.*ssid"
+    ],
+    "php": [
+      "echo\\s+\\$ssid",
+      "echo\\s+\\$\\w*ssid",
+      "print\\s+\\$ssid",
+      "<\\?=\\s*\\$\\w*ssid"
+    ],
+    "javascript": [
+      "innerHTML\\s*[+=].*ssid",
+      "outerHTML\\s*[+=].*ssid",
+      "document\\.write\\s*\\(.*ssid",
+      "\\$\\(.*\\)\\.html\\s*\\(.*ssid",
+      "\\.append\\s*\\(.*ssid",
+      "\\.prepend\\s*\\(.*ssid",
+      "\\$\\(.*\\)\\.after\\s*\\(.*ssid",
+      "\\$\\(.*\\)\\.before\\s*\\(.*ssid"
+    ],
+    "lua": [
+      "luci\\.http\\.write\\s*\\(.*ssid",
+      "write\\s*\\(.*ssid.*\\)"
+    ],
+    "go": [
+      "template\\.HTML\\s*\\(.*ssid",
+      "fmt\\.Fprintf\\s*\\(.*ssid.*<",
+      "io\\.WriteString\\s*\\(.*ssid.*<"
+    ],
+    "ruby": [
+      "raw\\s+.*ssid",
+      "html_safe.*ssid",
+      "<%=\\s*raw\\s+.*ssid"
+    ],
+    "python": [
+      "Markup\\s*\\(.*ssid",
+      "mark_safe\\s*\\(.*ssid",
+      "\\|\\s*safe.*ssid"
+    ]
+  },
+  "safe_patterns": [
+    "\\{\\{\\s*ssid\\s*\\|\\s*escape\\s*\\}\\}",
+    "\\{\\{\\s*ssid\\s*\\|\\s*e\\s*\\}\\}",
+    "htmlspecialchars\\s*\\(.*ssid",
+    "html\\.escape\\s*\\(.*ssid",
+    "encodeURIComponent\\s*\\(.*ssid",
+    "cgi\\.escape\\s*\\(.*ssid",
+    "textContent\\s*=.*ssid",
+    "innerText\\s*=.*ssid",
+    "template\\.HTMLEscapeString\\s*\\(.*ssid",
+    "\\$\\(.*\\)\\.text\\s*\\(.*ssid",
+    "sanitize\\s*\\(.*ssid",
+    "DOMPurify\\.sanitize\\s*\\(.*ssid"
+  ],
+  "file_patterns": [
+    "**/www/**/*.html",
+    "**/www/**/*.asp",
+    "**/htdocs/**/*.html",
+    "**/htdocs/**/*.php",
+    "**/cgi-bin/**",
+    "**/luci/**/*.htm",
+    "**/luci/**/*.lua",
+    "**/*survey*",
+    "**/*scan*",
+    "**/*wireless*",
+    "**/*wifi*"
+  ],
+  "test_payloads": [
+    "<script>alert(1)</script>",
+    "<img src=x onerror=alert(1)>",
+    "\"><svg onload=alert(1)>"
+  ]
+}
