@@ -1,0 +1,48 @@
+{
+  "class": "wifi_enc",
+  "name": "Encoding Normalization Bypass via SSID",
+  "severity": "medium",
+  "description": "ASCII validation applied before Unicode normalization allows fullwidth characters to bypass filters",
+  "cwe": "CWE-176",
+  "zero_click": true,
+  "source_patterns": {
+    "python": [
+      "unicodedata\\.normalize\\s*\\(.*ssid",
+      "re\\.match.*ssid.*normalize",
+      "re\\.sub.*ssid.*normalize",
+      "ssid\\.encode\\s*\\(.*\\)\\.decode",
+      "codecs\\.decode\\s*\\(.*ssid"
+    ],
+    "java": [
+      "Normalizer\\.normalize\\s*\\(.*ssid",
+      "Pattern.*ssid.*Normalizer",
+      "new\\s+String\\s*\\(.*ssid.*getBytes"
+    ],
+    "go": [
+      "norm\\.NFC\\.String\\s*\\(.*ssid",
+      "norm\\.NFKC\\.String\\s*\\(.*ssid",
+      "transform\\.Chain.*ssid"
+    ],
+    "ruby": [
+      "\\.unicode_normalize\\s*\\(.*ssid",
+      "UNF::Normalizer.*ssid"
+    ],
+    "c": [
+      "utf8_to_.*ssid",
+      "iconv\\s*\\(.*ssid",
+      "u_strToUTF8\\s*\\(.*ssid"
+    ]
+  },
+  "detection_logic": "Flag when input validation (regex/filter) occurs BEFORE normalization call on SSID",
+  "safe_patterns": [
+    "normalize.*validate.*ssid",
+    "normalize.*re\\.match.*ssid",
+    "normalize.*filter.*ssid"
+  ],
+  "test_payloads": [
+    "\\uff04(reboot)",
+    "\\uff5creboot\\uff5c",
+    "\\uff1breboot\\uff1b",
+    "%7Creboot%7C"
+  ]
+}
