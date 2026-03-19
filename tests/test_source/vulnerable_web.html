@@ -1,0 +1,19 @@
+<!-- Intentionally vulnerable web template for scanner validation -->
+<html>
+<head><title>Site Survey</title></head>
+<body>
+<h1>Wireless Networks</h1>
+<table>
+  <tr>
+    <td>SSID:</td>
+    <!-- wifi_xss: Unescaped SSID rendering -->
+    <td>{{ ssid }}</td>
+  </tr>
+</table>
+
+<script>
+// wifi_xss: DOM XSS via innerHTML
+document.getElementById('network').innerHTML = ssid;
+</script>
+</body>
+</html>
