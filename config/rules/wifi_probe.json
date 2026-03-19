@@ -1,0 +1,38 @@
+{
+  "class": "wifi_probe",
+  "name": "Malformed SSID WiFi Stack Parsing",
+  "severity": "high",
+  "description": "WiFi stack SSID parsing vulnerable to null bytes, control characters, Unicode edge cases, and protocol anomalies",
+  "cwe": "CWE-20",
+  "zero_click": true,
+  "source_patterns": {
+    "c": [
+      "strncpy\\s*\\(.*ie->ssid.*ie->ssid_len",
+      "strlen\\s*\\(.*ssid.*\\).*==\\s*0",
+      "strcmp\\s*\\(.*ssid",
+      "ssid\\[.*ssid_len.*\\]\\s*=\\s*'\\\\0'",
+      "if\\s*\\(\\s*ssid_len\\s*>\\s*32\\s*\\)",
+      "memcpy\\s*\\(.*ssid.*ie_len",
+      "if\\s*\\(\\s*ssid_len\\s*==\\s*0\\s*\\)",
+      "ssid_len\\s*=\\s*\\*\\s*pos",
+      "ie\\s*\\+\\s*2.*ssid_len"
+    ]
+  },
+  "binary_signatures": {
+    "dangerous_imports": ["strlen", "strcmp", "strncmp", "strncpy", "memcmp", "memcpy"],
+    "context_strings": ["ssid_len", "ie_len", "ssid_ie", "WLAN_EID_SSID", "IEEE80211", "beacon_ies", "probe_resp"]
+  },
+  "detection_logic": "Check for SSID parsers that assume null-termination, do not validate ssid_len against 0-32 range, or fail to handle embedded nulls and control characters",
+  "safe_patterns": [
+    "if\\s*\\(\\s*ssid_len\\s*>\\s*(?:32|IEEE80211_MAX_SSID_LEN)\\s*\\)\\s*return",
+    "if\\s*\\(\\s*ssid_len\\s*>\\s*32\\s*\\)\\s*ssid_len\\s*=\\s*32"
+  ],
+  "test_payloads": [
+    "",
+    " ",
+    "\\x00",
+    "\\x00HIDDEN\\x00NET",
+    "\\x01\\x01\\x01\\x01\\x01\\x01\\x01\\x01\\x01\\x01\\x01\\x01\\x01\\x01\\x01\\x01\\x01\\x01\\x01\\x01\\x01\\x01\\x01\\x01\\x01\\x01\\x01\\x01\\x01\\x01\\x01\\x01",
+    "DIRECT-xy-FAKEDEVICE"
+  ]
+}
