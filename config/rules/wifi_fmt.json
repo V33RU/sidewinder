@@ -1,0 +1,44 @@
+{
+  "class": "wifi_fmt",
+  "name": "Format String via SSID",
+  "severity": "critical",
+  "description": "SSID used as format argument instead of data argument in printf-family functions",
+  "cwe": "CWE-134",
+  "zero_click": true,
+  "source_patterns": {
+    "c": [
+      "printf\\s*\\(\\s*ssid\\s*\\)",
+      "printf\\s*\\(\\s*\\w*ssid\\w*\\s*\\)",
+      "fprintf\\s*\\(\\s*\\w+\\s*,\\s*ssid\\s*\\)",
+      "sprintf\\s*\\(\\s*\\w+\\s*,\\s*ssid\\s*\\)",
+      "syslog\\s*\\(\\s*\\w+\\s*,\\s*ssid\\s*\\)",
+      "syslog\\s*\\(\\s*LOG_\\w+\\s*,\\s*ssid\\s*\\)",
+      "Serial\\.printf?\\s*\\(\\s*ssid\\s*\\)",
+      "snprintf\\s*\\(\\s*\\w+\\s*,\\s*\\w+\\s*,\\s*ssid\\s*\\)",
+      "vsprintf\\s*\\(.*ssid\\s*\\)",
+      "vsnprintf\\s*\\(.*ssid\\s*\\)",
+      "vfprintf\\s*\\(.*ssid\\s*\\)",
+      "wprintf\\s*\\(\\s*ssid\\s*\\)",
+      "err\\s*\\(.*ssid\\s*\\)",
+      "warn\\s*\\(.*ssid\\s*\\)",
+      "ESP_LOG\\w+\\s*\\(\\s*\\w+\\s*,\\s*ssid\\s*\\)"
+    ]
+  },
+  "binary_signatures": {
+    "dangerous_imports": ["printf", "fprintf", "sprintf", "snprintf", "syslog", "vsprintf", "vsnprintf", "vfprintf", "vprintf", "wprintf"],
+    "context_strings": ["ssid", "SSID", "network_name", "ap_name"]
+  },
+  "safe_patterns": [
+    "printf\\s*\\(\\s*\"%s\"\\s*,\\s*ssid",
+    "syslog\\s*\\(\\s*\\w+\\s*,\\s*\"%s\"\\s*,\\s*ssid",
+    "fprintf\\s*\\(\\s*\\w+\\s*,\\s*\"%s\"\\s*,\\s*ssid",
+    "ESP_LOG\\w+\\s*\\(\\s*\\w+\\s*,\\s*\"%s\"\\s*,\\s*ssid"
+  ],
+  "test_payloads": [
+    "%s%s%s%s%s",
+    "%x%x%x%x",
+    "%n%n%n%n",
+    "%p%p%p%p",
+    "AAAA%08x%08x%08x"
+  ]
+}
