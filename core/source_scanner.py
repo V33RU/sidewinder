@@ -241,7 +241,7 @@ class SourceScanner:
         return " ".join(l.rstrip() for l in lines)
 
     # Limits to prevent hanging on firmware blobs
-    MAX_FILE_SIZE = 2 * 1024 * 1024   # 2 MB — skip huge auto-generated/minified files
+    MAX_FILE_SIZE = 2 * 1024 * 1024   # 2 MB - skip huge auto-generated/minified files
     MAX_LINES_MULTILINE = 10000       # Multi-line phase only on files < 10K lines
 
     def scan_file(self, file_path: str) -> list[Finding]:

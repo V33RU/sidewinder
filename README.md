@@ -12,7 +12,7 @@
 
 A static vulnerability scanner purpose-built for detecting **WiFi SSID injection vulnerabilities** in IoT firmware, source code, and ELF binaries. Based on the [CommandInWiFi-Zeroclick](https://github.com/Veerababu-Penugonda/CommandInWiFi-Zeroclick) research.
 
-SiDEWiNDER scans across **14 vulnerability classes**, cross-references **17 CVEs**, and supports **10 programming languages** — from C kernel drivers to Python IoT dashboards.
+SiDEWiNDER scans across **14 vulnerability classes**, cross-references **17 CVEs**, and supports **10 programming languages**  from C kernel drivers to Python IoT dashboards.
 
 ---
 
@@ -35,7 +35,7 @@ SiDEWiNDER finds these vulnerabilities **before** they reach production.
 | Feature | Description |
 |---|---|
 | **Source Code Scanner** | Regex-based pattern matching across C, Python, JavaScript, PHP, Java, Lua, Go, Ruby, Perl, Shell |
-| **Binary Analyzer** | ELF binary analysis (ARM, MIPS, x86) — import tables, string extraction, cross-referencing |
+| **Binary Analyzer** | ELF binary analysis (ARM, MIPS, x86)  import tables, string extraction, cross-referencing |
 | **Firmware Extractor** | Full firmware image extraction via `unblob` (SquashFS, JFFS2, CramFS, UBIFS, ext4) |
 | **Dependency Checker** | Detects known-vulnerable libraries (wpa_supplicant, Log4j, systeminformation, wappd, etc.) |
 | **Confidence Scoring** | Multi-signal scoring: `confirmed` > `high` > `medium` > `low` based on SSID context proximity |
@@ -53,18 +53,18 @@ SiDEWiNDER finds these vulnerabilities **before** they reach production.
 |---|---|---|---|
 | `wifi_cmd` | Critical | CWE-78 | Shell command injection via SSID in `system()`/`popen()`/`exec()` |
 | `wifi_overflow` | Critical | CWE-120 | Buffer overflow from SSID copy without length validation |
-| `wifi_fmt` | Critical | CWE-134 | Format string — SSID used as format argument in `printf`/`syslog` |
+| `wifi_fmt` | Critical | CWE-134 | Format string  SSID used as format argument in `printf`/`syslog` |
 | `wifi_heap` | Critical | CWE-122 | Heap metadata corruption via SSID overflow into allocator structures |
 | `wifi_jndi` | Critical | CWE-917 | JNDI/expression language injection via SSID in Log4j |
 | `wifi_xss` | High | CWE-79 | Cross-site scripting via unescaped SSID in web interfaces |
-| `wifi_serial` | High | CWE-94 | Serialization/config injection — SSID in JSON/XML/SQL/YAML |
+| `wifi_serial` | High | CWE-94 | Serialization/config injection  SSID in JSON/XML/SQL/YAML |
 | `wifi_path` | High | CWE-22 | Path traversal via SSID used in filesystem path construction |
 | `wifi_nosql` | High | CWE-943 | NoSQL/LDAP injection via SSID in database queries |
 | `wifi_probe` | High | CWE-20 | Malformed SSID probes targeting WiFi stack parsing logic |
 | `wifi_crlf` | Medium | CWE-113 | CRLF injection via SSID reflected in HTTP headers |
 | `wifi_esc` | Medium | CWE-150 | Terminal escape injection via SSID in serial/log output |
-| `wifi_enc` | Medium | CWE-176 | Encoding normalization bypass — validation before normalization |
-| `wifi_chain` | Medium | CWE-20 | Multi-SSID chain — split payloads across concatenated scan results |
+| `wifi_enc` | Medium | CWE-176 | Encoding normalization bypass  validation before normalization |
+| `wifi_chain` | Medium | CWE-20 | Multi-SSID chain  split payloads across concatenated scan results |
 
 ---
 
@@ -217,7 +217,7 @@ SiDEWiNDER includes a curated database of 17 real-world CVEs related to SSID inj
 
 | CVE | Component | Impact |
 |---|---|---|
-| CVE-2017-9417 | Broadcom BCM43xx | Broadpwn — zero-click WiFi chip RCE |
+| CVE-2017-9417 | Broadcom BCM43xx | Broadpwn  zero-click WiFi chip RCE |
 | CVE-2024-20017 | MediaTek wappd | Zero-click OOB write (CVSS 9.8) |
 | CVE-2015-1863 | wpa_supplicant | Heap overflow via SSID IE in P2P |
 | CVE-2021-44228 | Log4j | Log4Shell RCE via logged SSID |
@@ -304,7 +304,7 @@ Each rule file in `config/rules/` follows this schema:
 }
 ```
 
-To add a new vulnerability class, create a new JSON file in `config/rules/` — SiDEWiNDER automatically loads all rule files at startup.
+To add a new vulnerability class, create a new JSON file in `config/rules/`  SiDEWiNDER automatically loads all rule files at startup.
 
 ---
 

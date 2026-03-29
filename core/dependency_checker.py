@@ -224,7 +224,7 @@ class DependencyChecker:
                 continue
 
             # Skip libraries that only have file_patterns for non-binary types
-            # (e.g. .jar, .json, .xml, .properties) — these aren't relevant to ELF
+            # (e.g. .jar, .json, .xml, .properties) - these aren't relevant to ELF
             if "file_patterns" in lib and "binary_names" not in lib:
                 continue
 
@@ -235,7 +235,7 @@ class DependencyChecker:
                 for bname in lib.get("binary_names", [])
             )
 
-            # Search for version patterns — but ONLY if binary name matches
+            # Search for version patterns - but ONLY if binary name matches
             # or the library is known to have binary-detectable patterns.
             # This prevents generic patterns from matching unrelated binaries.
             if binary_match or lib.get("binary_names"):

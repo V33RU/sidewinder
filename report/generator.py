@@ -117,12 +117,12 @@ code { background: #161b22; padding: 2px 6px; border-radius: 4px; font-size: 0.9
 {% for f in source_findings %}
 <tr>
 <td><span class="severity-badge severity-{{ f.severity }}">{{ f.severity|upper }}</span></td>
-<td>{% if f.confidence %}<span class="confidence-badge confidence-{{ f.confidence }}">{{ f.confidence }}</span>{% else %}—{% endif %}</td>
+<td>{% if f.confidence %}<span class="confidence-badge confidence-{{ f.confidence }}">{{ f.confidence }}</span>{% else %}-{% endif %}</td>
 <td><code>{{ f.class }}</code></td>
 <td><code>{{ f.file|truncate_path }}</code></td>
 <td>{{ f.line }}</td>
 <td><code>{{ f.content|truncate(80, True) }}</code></td>
-<td>{{ f.cves|join(', ') if f.cves else '—' }}</td>
+<td>{{ f.cves|join(', ') if f.cves else '-' }}</td>
 </tr>
 {% endfor %}
 </table>
@@ -139,12 +139,12 @@ code { background: #161b22; padding: 2px 6px; border-radius: 4px; font-size: 0.9
 {% for f in binary_findings %}
 <tr>
 <td><span class="severity-badge severity-{{ f.severity }}">{{ f.severity|upper }}</span></td>
-<td>{% if f.confidence %}<span class="confidence-badge confidence-{{ f.confidence }}">{{ f.confidence }}</span>{% else %}—{% endif %}</td>
+<td>{% if f.confidence %}<span class="confidence-badge confidence-{{ f.confidence }}">{{ f.confidence }}</span>{% else %}-{% endif %}</td>
 <td><code>{{ f.class }}</code></td>
 <td><code>{{ f.file|truncate_path }}</code></td>
 <td><code>{{ f.function }}</code></td>
 <td>{{ f.details|truncate(100, True) }}</td>
-<td>{{ f.cves|join(', ') if f.cves else '—' }}</td>
+<td>{{ f.cves|join(', ') if f.cves else '-' }}</td>
 </tr>
 {% endfor %}
 </table>

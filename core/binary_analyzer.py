@@ -101,10 +101,10 @@ SSID_CONTEXT_STRINGS = [
     b"wifi_history",
 ]
 # Note: removed overly generic strings that cause false positives:
-# - "INSERT INTO" — matches any SQL-using binary
-# - "beacon" — matches timer/debug/UI beacons, not just WiFi beacons
-# - "scan_result" — matches any scan operation, not just WiFi
-# - "Site Survey", "Wireless Networks" — too broad for binary matching
+# - "INSERT INTO" - matches any SQL-using binary
+# - "beacon" - matches timer/debug/UI beacons, not just WiFi beacons
+# - "scan_result" - matches any scan operation, not just WiFi
+# - "Site Survey", "Wireless Networks" - too broad for binary matching
 
 # Shell command strings that may consume SSIDs
 SHELL_CONTEXT_STRINGS = [
@@ -186,7 +186,7 @@ class BinaryAnalyzer:
             pass
         return info
 
-    MAX_BINARY_SIZE = 20 * 1024 * 1024  # 20 MB — skip huge binaries for string extraction
+    MAX_BINARY_SIZE = 20 * 1024 * 1024  # 20 MB - skip huge binaries for string extraction
 
     def _extract_strings(self, file_path: str, min_length: int = 4) -> list[tuple[int, bytes]]:
         """Extract printable strings from binary with their offsets.
