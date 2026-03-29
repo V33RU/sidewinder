@@ -16,7 +16,6 @@ Usage:
 """
 
 import json
-import os
 import sys
 from pathlib import Path
 
@@ -39,7 +38,24 @@ from core.source_scanner import SourceScanner
 from core.binary_analyzer import BinaryAnalyzer
 from core.firmware_extractor import FirmwareExtractor
 from core.dependency_checker import DependencyChecker
-from report.generator import ReportGenerator, CLASS_DESCRIPTIONS
+
+
+CLASS_DESCRIPTIONS = {
+    "wifi_cmd":      "Shell command injection via SSID in system()/popen()/exec()",
+    "wifi_overflow": "Buffer overflow from SSID copy without length validation",
+    "wifi_fmt":      "Format string: SSID used as format argument in printf/syslog",
+    "wifi_xss":      "Cross-site scripting via unescaped SSID in web interfaces",
+    "wifi_serial":   "Serialization/config injection: SSID in JSON/XML/SQL/YAML",
+    "wifi_crlf":     "CRLF injection via SSID reflected in HTTP headers",
+    "wifi_jndi":     "JNDI/expression language injection via SSID in Log4j",
+    "wifi_path":     "Path traversal via SSID used in filesystem path construction",
+    "wifi_nosql":    "NoSQL/LDAP injection via SSID in database queries",
+    "wifi_esc":      "Terminal escape injection via SSID in serial/log output",
+    "wifi_enc":      "Encoding normalization bypass: validation before normalization",
+    "wifi_heap":     "Heap metadata corruption via SSID overflow into allocator structures",
+    "wifi_chain":    "Multi-SSID chain: split payloads across concatenated scan results",
+    "wifi_probe":    "Malformed SSID probes targeting WiFi stack parsing logic",
+}
 
 
 def get_console():
@@ -69,12 +85,10 @@ def run_source_scan(scanner, target, console):
             console=console,
         ) as progress:
             task = progress.add_task("Source scan", total=total)
-            findings_count = [0]
 
             def callback(fpath, done, tot):
-                findings_count[0] = len(scanner.findings)
                 progress.update(task, completed=done,
-                                description=f"Source scan ({findings_count[0]} findings)")
+                                description=f"Source scan ({len(scanner.findings)} findings)")
 
             scanner.scan_directory(target, progress_callback=callback)
     else:
@@ -206,14 +220,27 @@ def print_findings_table(console, findings, title):
 
     console.print(table)
     if len(findings) > 50:
-        console.print(f"  ... and {len(findings) - 50} more findings (see report)")
+        console.print(f"  ... and {len(findings) - 50} more findings.")
 
 
-def print_summary(console, report):
+def _merge_summaries(*summaries):
+    """Merge multiple scanner summaries into one for display."""
+    total = 0
+    severity = {}
+    files = 0
+    for s in summaries:
+        if not s:
+            continue
+        total += s.get("total_findings", 0)
+        files += s.get("files_scanned", 0)
+        for sev, count in s.get("by_severity", {}).items():
+            severity[sev] = severity.get(sev, 0) + count
+    return {"total_findings": total, "severity": severity, "files_scanned": files}
+
+
+def print_summary(console, summary):
     """Print scan summary."""
-    summary = report["summary"]
-
-    if HAS_RICH:
+    if HAS_RICH and console:
         console.print()
         console.print(Panel(
             f"[bold]Total Findings:[/bold] {summary['total_findings']}  |  "
@@ -242,9 +269,7 @@ def cli():
 
 @cli.command()
 @click.argument("target", type=click.Path(exists=True))
-@click.option("--output", "-o", default="reports", help="Output directory for reports")
-@click.option("--format", "-f", "fmt", type=click.Choice(["json", "html", "both"]), default="both")
-def scan(target, output, fmt):
+def scan(target):
     """Scan source code for SSID injection vulnerabilities."""
     print_banner()
     console = get_console()
@@ -260,24 +285,12 @@ def scan(target, output, fmt):
     if console:
         print_findings_table(console, summary["findings"], "Source Code Findings")
 
-    # Generate report
-    gen = ReportGenerator(output)
-    report = gen.generate(target, source_summary=summary)
-    print_summary(console, report)
-
-    if fmt in ("json", "both"):
-        path = gen.save_json(report)
-        print(f"JSON report: {path}")
-    if fmt in ("html", "both"):
-        path = gen.save_html(report)
-        print(f"HTML report: {path}")
+    print_summary(console, _merge_summaries(summary))
 
 
 @cli.command()
 @click.argument("target", type=click.Path(exists=True))
-@click.option("--output", "-o", default="reports", help="Output directory for reports")
-@click.option("--format", "-f", "fmt", type=click.Choice(["json", "html", "both"]), default="both")
-def binary(target, output, fmt):
+def binary(target):
     """Analyze ELF binaries for SSID vulnerability indicators."""
     print_banner()
     console = get_console()
@@ -293,25 +306,14 @@ def binary(target, output, fmt):
     if console:
         print_findings_table(console, summary["findings"], "Binary Analysis Findings")
 
-    gen = ReportGenerator(output)
-    report = gen.generate(target, binary_summary=summary)
-    print_summary(console, report)
-
-    if fmt in ("json", "both"):
-        path = gen.save_json(report)
-        print(f"JSON report: {path}")
-    if fmt in ("html", "both"):
-        path = gen.save_html(report)
-        print(f"HTML report: {path}")
+    print_summary(console, _merge_summaries(summary))
 
 
 @cli.command()
 @click.argument("firmware_path", type=click.Path(exists=True))
-@click.option("--output", "-o", default="reports", help="Output directory for reports")
 @click.option("--extract-dir", "-e", default=None, help="Custom extraction directory")
 @click.option("--keep", is_flag=True, help="Keep extracted files after scanning")
-@click.option("--format", "-f", "fmt", type=click.Choice(["json", "html", "both"]), default="both")
-def firmware(firmware_path, output, extract_dir, keep, fmt):
+def firmware(firmware_path, extract_dir, keep):
     """Extract and scan firmware image (requires unblob)."""
     print_banner()
     console = get_console()
@@ -359,22 +361,7 @@ def firmware(firmware_path, output, extract_dir, keep, fmt):
         print_findings_table(console, bin_summary["findings"], "Binary Analysis Findings")
         print_findings_table(console, dep_summary["findings"], "Vulnerable Dependencies")
 
-    # Generate report
-    gen = ReportGenerator(output)
-    report = gen.generate(
-        firmware_path,
-        source_summary=src_summary,
-        binary_summary=bin_summary,
-        dependency_summary=dep_summary,
-    )
-    print_summary(console, report)
-
-    if fmt in ("json", "both"):
-        path = gen.save_json(report)
-        print(f"JSON report: {path}")
-    if fmt in ("html", "both"):
-        path = gen.save_html(report)
-        print(f"HTML report: {path}")
+    print_summary(console, _merge_summaries(src_summary, bin_summary, dep_summary))
 
     # Cleanup
     if not keep:
@@ -384,8 +371,7 @@ def firmware(firmware_path, output, extract_dir, keep, fmt):
 
 @cli.command()
 @click.argument("target", type=click.Path(exists=True))
-@click.option("--output", "-o", default="reports", help="Output directory for reports")
-def deps(target, output):
+def deps(target):
     """Check for vulnerable dependencies (libraries, packages)."""
     print_banner()
     console = get_console()
@@ -401,19 +387,12 @@ def deps(target, output):
     if console:
         print_findings_table(console, summary["findings"], "Vulnerable Dependencies")
 
-    gen = ReportGenerator(output)
-    report = gen.generate(target, dependency_summary=summary)
-    print_summary(console, report)
-
-    path = gen.save_json(report)
-    print(f"Report: {path}")
+    print_summary(console, _merge_summaries(summary))
 
 
 @cli.command()
 @click.argument("target", type=click.Path(exists=True))
-@click.option("--output", "-o", default="reports", help="Output directory for reports")
-@click.option("--format", "-f", "fmt", type=click.Choice(["json", "html", "both"]), default="both")
-def full(target, output, fmt):
+def full(target):
     """Run all scanners on a target directory."""
     print_banner()
     console = get_console()
@@ -447,22 +426,7 @@ def full(target, output, fmt):
         print_findings_table(console, bin_summary["findings"], "Binary Analysis Findings")
         print_findings_table(console, dep_summary["findings"], "Vulnerable Dependencies")
 
-    # Generate report
-    gen = ReportGenerator(output)
-    report = gen.generate(
-        target,
-        source_summary=src_summary,
-        binary_summary=bin_summary,
-        dependency_summary=dep_summary,
-    )
-    print_summary(console, report)
-
-    if fmt in ("json", "both"):
-        path = gen.save_json(report)
-        print(f"JSON report: {path}")
-    if fmt in ("html", "both"):
-        path = gen.save_html(report)
-        print(f"HTML report: {path}")
+    print_summary(console, _merge_summaries(src_summary, bin_summary, dep_summary))
 
 
 @cli.command()
@@ -472,7 +436,6 @@ def info():
     console = get_console()
 
     if HAS_RICH and console:
-        # Vulnerability classes table
         table = Table(title="14 SSID Vulnerability Classes", show_lines=True)
         table.add_column("Class", style="cyan", width=16)
         table.add_column("Description", width=60)
@@ -481,7 +444,6 @@ def info():
             table.add_row(cls, desc)
         console.print(table)
 
-        # CVE database table
         try:
             with open(CVE_DB_PATH) as f:
                 cves = json.load(f).get("cves", [])
