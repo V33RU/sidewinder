@@ -184,11 +184,11 @@ def print_findings_table(console, findings, title):
     if not HAS_RICH or not findings:
         return
 
-    table = Table(title=title, show_lines=True)
-    table.add_column("Severity", style="bold", width=10)
-    table.add_column("Class", width=16)
-    table.add_column("File", width=30)
-    table.add_column("Details", width=50)
+    table = Table(title=title, show_lines=True, expand=True)
+    table.add_column("Severity", style="bold", width=10, no_wrap=True)
+    table.add_column("Class", width=14, no_wrap=True)
+    table.add_column("File Path", overflow="fold", min_width=30)
+    table.add_column("Details", overflow="fold", min_width=20)
 
     severity_colors = {
         "critical": "red",
@@ -203,13 +203,9 @@ def print_findings_table(console, findings, title):
         cls = f.get("class", f.get("vuln_class", "?"))
         file_info = f.get("file", "?")
         if "line" in f and f["line"]:
-            file_info = f"{Path(file_info).name}:{f['line']}"
-        else:
-            file_info = Path(file_info).name
+            file_info = f"{file_info}:{f['line']}"
 
         detail = f.get("content", f.get("details", f.get("context", "")))
-        if len(detail) > 50:
-            detail = detail[:47] + "..."
 
         table.add_row(
             f"[{color}]{sev.upper()}[/{color}]",
