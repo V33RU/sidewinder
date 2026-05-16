@@ -9,7 +9,6 @@ No source code required.
 import json
 import os
 import re
-import struct
 import subprocess
 from pathlib import Path
 from dataclasses import dataclass, field
@@ -123,6 +122,16 @@ class BinaryAnalyzer:
         self.findings: list[BinaryFinding] = []
         self.files_analyzed = 0
 
+        # Effective function->class map: starts from the hardcoded fallback
+        # and is extended by anything declared in rule JSONs'
+        # ``binary_signatures.dangerous_imports``. Rule JSONs are authoritative
+        # when they list a class that also lives in DANGEROUS_FUNCTIONS.
+        self._effective_dangerous = self._build_effective_dangerous()
+        # Per-class additional context strings drawn from rule JSONs
+        # (``binary_signatures.context_strings``). Empty when no rule
+        # contributes any.
+        self._rule_context_strings = self._build_rule_context_strings()
+
     def _load_binary_rules(self, rules_dir: str) -> dict:
         """Load binary-specific signatures from rule files."""
         rules = {}
@@ -133,6 +142,43 @@ class BinaryAnalyzer:
                 if "binary_signatures" in rule:
                     rules[rule["class"]] = rule
         return rules
+
+    def _build_effective_dangerous(self) -> dict:
+        """Merge rule-JSON ``dangerous_imports`` with the hardcoded fallback.
+
+        Rule JSONs are authoritative when present; the hardcoded
+        ``DANGEROUS_FUNCTIONS`` dict supplies (a) a default severity for any
+        class only mentioned in a rule and (b) coverage for classes with no
+        rule entry at all (backward compatibility).
+        """
+        effective = {
+            cls: {"functions": list(info["functions"]), "severity": info["severity"]}
+            for cls, info in DANGEROUS_FUNCTIONS.items()
+        }
+        for cls, rule in self.rules.items():
+            sig = rule.get("binary_signatures", {})
+            funcs = sig.get("dangerous_imports", [])
+            if not funcs:
+                continue
+            severity = rule.get("severity") or effective.get(cls, {}).get("severity", "medium")
+            existing = effective.setdefault(cls, {"functions": [], "severity": severity})
+            existing["severity"] = severity
+            # Union the function lists, preserving order
+            merged = list(existing["functions"])
+            for f in funcs:
+                if f not in merged:
+                    merged.append(f)
+            existing["functions"] = merged
+        return effective
+
+    def _build_rule_context_strings(self) -> dict:
+        """Pull additional per-class context strings from rule JSONs."""
+        out = {}
+        for cls, rule in self.rules.items():
+            ctx = rule.get("binary_signatures", {}).get("context_strings", [])
+            if ctx:
+                out[cls] = [c.encode("utf-8", errors="ignore") for c in ctx]
+        return out
 
     def _load_cve_db(self, cve_db_path: str) -> list[dict]:
         try:
@@ -300,6 +346,16 @@ class BinaryAnalyzer:
 
         return strings
 
+    @staticmethod
+    def _normalize_symbol(name: str) -> str:
+        """Drop GLIBC/ld versioning suffixes so ``system@GLIBC_2.2.5`` matches
+        a plain ``system`` lookup. Modern Linux toolchains emit versioned
+        symbols by default; without this step the entire analyzer reports no
+        dangerous imports on any glibc-linked binary."""
+        if "@" in name:
+            name = name.split("@", 1)[0]
+        return name.lstrip("_")  # also tolerate leading-underscore mangling
+
     def _get_imported_functions(self, file_path: str) -> list[str]:
         """Extract imported function names from ELF binary."""
         imports = []
@@ -313,7 +369,7 @@ class BinaryAnalyzer:
                 for line in result.stdout.splitlines():
                     parts = line.strip().split()
                     if parts:
-                        imports.append(parts[-1])
+                        imports.append(self._normalize_symbol(parts[-1]))
                 return imports
 
             # Fallback to objdump
@@ -326,7 +382,7 @@ class BinaryAnalyzer:
                     if "*UND*" in line:
                         parts = line.strip().split()
                         if parts:
-                            imports.append(parts[-1])
+                            imports.append(self._normalize_symbol(parts[-1]))
         except (subprocess.TimeoutExpired, FileNotFoundError):
             pass
 
@@ -341,16 +397,15 @@ class BinaryAnalyzer:
         file_findings = []
         elf_info = self._get_elf_info(file_path)
 
-        # Step 1: Check imported functions
+        # Step 1: Check imported functions (rule-driven, with hardcoded fallback)
         imports = self._get_imported_functions(file_path)
+        imports_set = set(imports)
         found_dangerous = {}
 
-        for vuln_class, info in DANGEROUS_FUNCTIONS.items():
+        for vuln_class, info in self._effective_dangerous.items():
             for func in info["functions"]:
-                if func in imports:
-                    if vuln_class not in found_dangerous:
-                        found_dangerous[vuln_class] = []
-                    found_dangerous[vuln_class].append(func)
+                if func in imports_set:
+                    found_dangerous.setdefault(vuln_class, []).append(func)
 
         # Step 2: Extract and analyze strings
         strings = self._extract_strings(file_path)
@@ -358,8 +413,16 @@ class BinaryAnalyzer:
         ssid_string_offsets = []
         shell_command_offsets = []
 
+        # Build the effective SSID-context set: builtin + anything contributed
+        # by rule JSONs via binary_signatures.context_strings.
+        ssid_context_set = list(SSID_CONTEXT_STRINGS)
+        for rule_ctx in self._rule_context_strings.values():
+            for c in rule_ctx:
+                if c not in ssid_context_set:
+                    ssid_context_set.append(c)
+
         for offset, s in strings:
-            for ctx in SSID_CONTEXT_STRINGS:
+            for ctx in ssid_context_set:
                 if ctx.lower() in s.lower():
                     has_ssid_context = True
                     ssid_string_offsets.append((offset, s))
@@ -372,7 +435,7 @@ class BinaryAnalyzer:
         # Step 3: Cross-reference dangerous imports with SSID context
         if has_ssid_context:
             for vuln_class, funcs in found_dangerous.items():
-                severity = DANGEROUS_FUNCTIONS[vuln_class]["severity"]
+                severity = self._effective_dangerous[vuln_class]["severity"]
                 for func in funcs:
                     # Confidence based on number of SSID context hits
                     n_ctx = len(ssid_string_offsets)

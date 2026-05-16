@@ -216,7 +216,29 @@ def print_findings_table(console, findings, title):
 
     console.print(table)
     if len(findings) > 50:
-        console.print(f"  ... and {len(findings) - 50} more findings.")
+        console.print(
+            f"  [yellow]Showing 50/{len(findings)} findings.[/yellow] "
+            f"Use --json <path> to write the full result set."
+        )
+
+
+def _write_json(path: str, payload: dict, console=None) -> None:
+    """Write a scanner summary (or merged summary) to ``path`` as JSON.
+
+    The payload is whatever a scanner's ``get_summary()`` returns (or a dict
+    that combines several summaries). Writing is best-effort: failures emit
+    a warning to the console but do not raise.
+    """
+    try:
+        with open(path, "w") as fh:
+            json.dump(payload, fh, indent=2, default=str)
+        if console:
+            console.print(f"[green]Wrote JSON results to {path}[/green]")
+    except OSError as e:
+        if console:
+            console.print(f"[red]Failed to write {path}: {e}[/red]")
+        else:
+            print(f"Failed to write {path}: {e}", file=sys.stderr)
 
 
 def _merge_summaries(*summaries):
@@ -248,7 +270,7 @@ def print_summary(console, summary):
             title="Scan Summary",
         ))
     else:
-        print(f"\n--- Scan Summary ---")
+        print("\n--- Scan Summary ---")
         print(f"Total Findings: {summary['total_findings']}")
         print(f"Critical: {summary['severity'].get('critical', 0)}")
         print(f"High: {summary['severity'].get('high', 0)}")
@@ -265,7 +287,9 @@ def cli():
 
 @cli.command()
 @click.argument("target", type=click.Path(exists=True))
-def scan(target):
+@click.option("--json", "json_path", type=click.Path(), default=None,
+              help="Write full results (all findings + summary) to this JSON file.")
+def scan(target, json_path):
     """Scan source code for SSID injection vulnerabilities."""
     print_banner()
     console = get_console()
@@ -283,10 +307,15 @@ def scan(target):
 
     print_summary(console, _merge_summaries(summary))
 
+    if json_path:
+        _write_json(json_path, {"command": "scan", "target": target, "source": summary}, console)
+
 
 @cli.command()
 @click.argument("target", type=click.Path(exists=True))
-def binary(target):
+@click.option("--json", "json_path", type=click.Path(), default=None,
+              help="Write full results (all findings + summary) to this JSON file.")
+def binary(target, json_path):
     """Analyze ELF binaries for SSID vulnerability indicators."""
     print_banner()
     console = get_console()
@@ -304,12 +333,17 @@ def binary(target):
 
     print_summary(console, _merge_summaries(summary))
 
+    if json_path:
+        _write_json(json_path, {"command": "binary", "target": target, "binary": summary}, console)
+
 
 @cli.command()
 @click.argument("firmware_path", type=click.Path(exists=True))
 @click.option("--extract-dir", "-e", default=None, help="Custom extraction directory")
 @click.option("--keep", is_flag=True, help="Keep extracted files after scanning")
-def firmware(firmware_path, extract_dir, keep):
+@click.option("--json", "json_path", type=click.Path(), default=None,
+              help="Write full results (all phases) to this JSON file.")
+def firmware(firmware_path, extract_dir, keep, json_path):
     """Extract and scan firmware image (requires unblob)."""
     print_banner()
     console = get_console()
@@ -359,6 +393,20 @@ def firmware(firmware_path, extract_dir, keep):
 
     print_summary(console, _merge_summaries(src_summary, bin_summary, dep_summary))
 
+    if json_path:
+        _write_json(
+            json_path,
+            {
+                "command": "firmware",
+                "firmware": firmware_path,
+                "extraction": result.to_dict(),
+                "source": src_summary,
+                "binary": bin_summary,
+                "dependencies": dep_summary,
+            },
+            console,
+        )
+
     # Cleanup
     if not keep:
         extractor.cleanup(result.output_dir)
@@ -367,7 +415,9 @@ def firmware(firmware_path, extract_dir, keep):
 
 @cli.command()
 @click.argument("target", type=click.Path(exists=True))
-def deps(target):
+@click.option("--json", "json_path", type=click.Path(), default=None,
+              help="Write full results (all findings + summary) to this JSON file.")
+def deps(target, json_path):
     """Check for vulnerable dependencies (libraries, packages)."""
     print_banner()
     console = get_console()
@@ -385,10 +435,15 @@ def deps(target):
 
     print_summary(console, _merge_summaries(summary))
 
+    if json_path:
+        _write_json(json_path, {"command": "deps", "target": target, "dependencies": summary}, console)
+
 
 @cli.command()
 @click.argument("target", type=click.Path(exists=True))
-def full(target):
+@click.option("--json", "json_path", type=click.Path(), default=None,
+              help="Write full results (all 3 phases) to this JSON file.")
+def full(target, json_path):
     """Run all scanners on a target directory."""
     print_banner()
     console = get_console()
@@ -423,6 +478,19 @@ def full(target):
         print_findings_table(console, dep_summary["findings"], "Vulnerable Dependencies")
 
     print_summary(console, _merge_summaries(src_summary, bin_summary, dep_summary))
+
+    if json_path:
+        _write_json(
+            json_path,
+            {
+                "command": "full",
+                "target": target,
+                "source": src_summary,
+                "binary": bin_summary,
+                "dependencies": dep_summary,
+            },
+            console,
+        )
 
 
 @cli.command()

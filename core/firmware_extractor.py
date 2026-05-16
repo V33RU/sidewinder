@@ -189,19 +189,26 @@ class FirmwareExtractor:
         )
 
     def identify(self, firmware_path: str) -> dict:
-        """Identify firmware contents without full extraction."""
+        """Identify firmware contents without full extraction.
+
+        Uses unblob's ``--skip-extraction`` to carve chunks and produce a
+        metadata report without performing the (potentially slow) recursive
+        extraction.
+        """
         if not self.available_tools.get("unblob"):
             return {"error": "unblob not installed"}
 
         try:
             result = subprocess.run(
-                ["unblob", "--log", "stdout", "--dry-run", firmware_path],
+                ["unblob", "--skip-extraction", firmware_path],
                 capture_output=True, text=True, timeout=60,
             )
             return {
                 "firmware": firmware_path,
                 "size": os.path.getsize(firmware_path),
                 "scan_output": result.stdout,
+                "scan_errors": result.stderr,
+                "returncode": result.returncode,
             }
         except (subprocess.TimeoutExpired, FileNotFoundError) as e:
             return {"error": str(e)}

@@ -12,7 +12,6 @@ import os
 import re
 from pathlib import Path
 from dataclasses import dataclass, field
-from hashlib import sha256
 
 
 @dataclass

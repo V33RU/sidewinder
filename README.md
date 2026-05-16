@@ -120,14 +120,10 @@ python3 cli.py info
 ### Options
 
 ```bash
-# Output to custom directory
-python3 cli.py scan /target -o ./my_reports
-
-# JSON only (no HTML)
-python3 cli.py scan /target -f json
-
-# HTML only
-python3 cli.py scan /target -f html
+# Write full results (all findings + summary) to a JSON file
+python3 cli.py scan /target --json results.json
+python3 cli.py full /target --json results.json
+python3 cli.py firmware image.bin --json results.json
 
 # Keep extracted firmware files
 python3 cli.py firmware image.bin --keep
@@ -135,6 +131,10 @@ python3 cli.py firmware image.bin --keep
 # Custom extraction directory
 python3 cli.py firmware image.bin -e /tmp/extracted
 ```
+
+> **Note:** HTML report generation was removed in a recent refactor and has
+> not yet been reinstated. Use `--json` for machine-readable output; the
+> console table is currently capped at 50 rows for readability.
 
 ---
 
@@ -199,9 +199,9 @@ sidewinder/
 │       ├── wifi_heap.json          # Heap corruption patterns
 │       ├── wifi_chain.json         # Multi-SSID chain patterns
 │       └── wifi_probe.json         # Malformed SSID parsing patterns
-├── report/
-│   └── generator.py                # HTML + JSON report generation
 └── tests/
+    ├── test_scanners.py            # pytest snapshot suite (run with `pytest`)
+    ├── conftest.py                 # shared pytest fixtures
     └── test_source/
         ├── vulnerable_c.c          # C test cases (cmd, overflow, fmt, serial, path, nosql, probe)
         ├── vulnerable_python.py    # Python test cases (cmd, enc)
@@ -276,6 +276,26 @@ Each finding includes a confidence level based on contextual signals:
 | **High** | Strong indicator | SSID reference within 3 lines of finding; WiFi function names nearby |
 | **Medium** | Probable vulnerability | SSID-related code within 10-line window; pattern matches known sink |
 | **Low** | Needs manual review | Pattern match without nearby SSID context; generic function name |
+
+---
+
+## Development
+
+```bash
+# Install dev dependencies (includes pytest + ruff)
+pip install -r requirements-dev.txt
+
+# Run the test suite
+pytest -v
+
+# Lint
+ruff check .
+```
+
+CI runs the same `ruff check` + `pytest` matrix on Python 3.11 and 3.12 - see
+`.github/workflows/ci.yml`. The snapshot tests in `tests/test_scanners.py`
+lock in current detection behavior; if a detection change is intentional,
+update `EXPECTED_SOURCE_COUNTS` in that file.
 
 ---
 

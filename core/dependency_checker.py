@@ -5,11 +5,16 @@ Checks firmware and source code for libraries with known SSID-related
 vulnerabilities. Matches library versions against CVE database.
 """
 
-import json
 import os
 import re
 from pathlib import Path
-from dataclasses import dataclass, field
+from dataclasses import dataclass
+
+try:
+    from packaging.version import InvalidVersion, Version
+    _HAVE_PACKAGING = True
+except ImportError:  # pragma: no cover - packaging is in requirements.txt
+    _HAVE_PACKAGING = False
 
 
 @dataclass
@@ -108,6 +113,7 @@ VULNERABLE_LIBRARIES = [
         "version_patterns": [
             r"BCM43\w+\s+firmware\s+v?([\d.]+)",
         ],
+        "flag_any_version": True,
     },
     {
         "name": "Realtek RTL8195A",
@@ -120,6 +126,7 @@ VULNERABLE_LIBRARIES = [
         "version_patterns": [
             r"RTL8195A?\s+v?([\d.]+)",
         ],
+        "flag_any_version": True,
     },
     {
         "name": "FreeBSD net80211",
@@ -131,6 +138,7 @@ VULNERABLE_LIBRARIES = [
         "version_patterns": [
             r"FreeBSD\s+([\d.]+)",
         ],
+        "flag_any_version": True,
     },
 ]
 
@@ -142,29 +150,51 @@ class DependencyChecker:
         self.findings: list[DependencyFinding] = []
         self.files_checked = 0
 
+    @staticmethod
+    def _parse_version(v: str):
+        """Parse a version string into a comparable object.
+
+        Uses packaging.Version when available (handles pre-releases like
+        ``2.0-beta9`` correctly). Falls back to a naive tuple if packaging
+        is missing or the string can't be parsed. Strips trailing punctuation
+        first because regex extractors sometimes capture a trailing ``.``.
+        """
+        cleaned = v.strip().rstrip(".-_+")
+        if _HAVE_PACKAGING:
+            try:
+                normalized = (cleaned
+                              .replace("-beta", "b")
+                              .replace("-alpha", "a")
+                              .replace("-rc", "rc"))
+                return Version(normalized)
+            except InvalidVersion:
+                pass
+        parts = []
+        for p in re.split(r"[.\-+]", cleaned):
+            parts.append(int(p) if p.isdigit() else 0)
+        return tuple(parts)
+
     def _version_compare(self, v1: str, v2: str) -> int:
         """Compare two version strings. Returns -1, 0, or 1."""
-        def normalize(v):
-            parts = []
-            for p in re.split(r'[.\-]', v):
-                if p.isdigit():
-                    parts.append(int(p))
-                else:
-                    parts.append(0)
-            return parts
-
-        p1, p2 = normalize(v1), normalize(v2)
-        # Pad shorter list
-        max_len = max(len(p1), len(p2))
-        p1.extend([0] * (max_len - len(p1)))
-        p2.extend([0] * (max_len - len(p2)))
-
-        for a, b in zip(p1, p2):
-            if a < b:
-                return -1
-            if a > b:
-                return 1
+        p1, p2 = self._parse_version(v1), self._parse_version(v2)
+        # If parsing dropped one side to a tuple fallback while the other is a
+        # packaging.Version, coerce both to tuples so the comparison is total.
+        if type(p1) is not type(p2):
+            p1 = self._naive_tuple(v1)
+            p2 = self._naive_tuple(v2)
+        if p1 < p2:
+            return -1
+        if p1 > p2:
+            return 1
         return 0
+
+    @staticmethod
+    def _naive_tuple(v: str) -> tuple:
+        cleaned = v.strip().rstrip(".-_+")
+        parts = []
+        for p in re.split(r"[.\-+]", cleaned):
+            parts.append(int(p) if p.isdigit() else 0)
+        return tuple(parts)
 
     def _is_vulnerable_version(self, version: str, lib: dict) -> bool:
         """Check if a detected version falls within the vulnerable range.
@@ -172,6 +202,12 @@ class DependencyChecker:
         Supports:
         - vulnerable_below: version < threshold
         - vulnerable_range: ">=lower,<=upper" (e.g. Log4j 2.0-beta9 to 2.14.1)
+        - flag_any_version: True  -> match regardless of detected version
+          (only for libraries where no fixed version is published, e.g. legacy
+          chip firmware without per-version release notes)
+
+        If none of the above are set, returns False: we no longer flag every
+        detected version for libraries lacking explicit metadata.
         """
         if "vulnerable_below" in lib:
             return self._version_compare(version, lib["vulnerable_below"]) < 0
@@ -198,7 +234,7 @@ class DependencyChecker:
                         return False
             return True
 
-        return True  # If no version range specified, flag for manual review
+        return bool(lib.get("flag_any_version", False))
 
     def check_binary_strings(self, file_path: str) -> list[DependencyFinding]:
         """Check binary file for version strings of vulnerable libraries."""

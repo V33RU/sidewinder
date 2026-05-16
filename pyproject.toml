@@ -1,0 +1,17 @@
+[tool.ruff]
+line-length = 120
+target-version = "py311"
+
+[tool.ruff.lint]
+# Default ruff rules catch real bugs (F-codes, undefined names).
+# We deliberately allow:
+#   E402 - cli.py sets sys.path before importing core/* on purpose
+#   E741 - pre-existing single-letter loop var in source_scanner.py
+#   F541 - f-strings without placeholders are fine (formatting consistency)
+#   F841 - unused locals are tolerated in scanner code where the assignment
+#          documents intent
+ignore = ["E402", "E741", "F541", "F841"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra"
