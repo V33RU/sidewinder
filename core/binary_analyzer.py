@@ -413,16 +413,15 @@ class BinaryAnalyzer:
         ssid_string_offsets = []
         shell_command_offsets = []
 
-        # Build the effective SSID-context set: builtin + anything contributed
-        # by rule JSONs via binary_signatures.context_strings.
-        ssid_context_set = list(SSID_CONTEXT_STRINGS)
-        for rule_ctx in self._rule_context_strings.values():
-            for c in rule_ctx:
-                if c not in ssid_context_set:
-                    ssid_context_set.append(c)
-
+        # Only the hardcoded SSID_CONTEXT_STRINGS list is used as the global
+        # "this binary processes SSIDs" signal. Rule-JSON context strings are
+        # intentionally NOT pooled here: a wifi_serial rule lists SQL keywords
+        # like SELECT/VALUES as class-specific corroboration signals, not as
+        # SSID identifiers. Pooling them caused ~10x false-positive inflation
+        # against real firmware (any binary with the word "select" got tagged
+        # as SSID-processing).
         for offset, s in strings:
-            for ctx in ssid_context_set:
+            for ctx in SSID_CONTEXT_STRINGS:
                 if ctx.lower() in s.lower():
                     has_ssid_context = True
                     ssid_string_offsets.append((offset, s))
@@ -432,8 +431,16 @@ class BinaryAnalyzer:
                     shell_command_offsets.append((offset, s))
                     break
 
-        # Step 3: Cross-reference dangerous imports with SSID context
-        if has_ssid_context:
+        # Step 3: Cross-reference dangerous imports with SSID context.
+        # Require at least 2 distinct SSID-context string hits before emitting
+        # critical/high cross-reference findings. A single accidental
+        # substring match (e.g. "processid" containing "ssid", "mmap_name"
+        # containing "ap_name") is far more likely to be coincidence than a
+        # genuine SSID-processing binary. Real WiFi-handling binaries observed
+        # in production firmware have dozens of context hits, while
+        # non-WiFi binaries with accidental matches almost always have just 1.
+        # Binaries with 0 or 1 hits fall through to Step 4 (low severity).
+        if has_ssid_context and len(ssid_string_offsets) >= 2:
             for vuln_class, funcs in found_dangerous.items():
                 severity = self._effective_dangerous[vuln_class]["severity"]
                 for func in funcs:
@@ -486,7 +493,10 @@ class BinaryAnalyzer:
                     )
                     file_findings.append(finding)
 
-        # Step 4: Report dangerous imports even without confirmed SSID context
+        # Step 4: Report dangerous imports even without confirmed SSID context.
+        # Reached when the binary has 0 or 1 SSID-context hits (insufficient
+        # corroboration for a high-severity finding) but still imports
+        # dangerous functions worth manual review.
         elif found_dangerous:
             for vuln_class, funcs in found_dangerous.items():
                 for func in funcs:

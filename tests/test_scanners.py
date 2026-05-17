@@ -210,3 +210,52 @@ def test_binary_rules_are_loaded(rules_dir, cve_db_path):
     # At minimum, wifi_cmd should be in the merged dangerous set with system().
     assert "wifi_cmd" in analyzer._effective_dangerous
     assert "system" in analyzer._effective_dangerous["wifi_cmd"]["functions"]
+
+
+def test_binary_analyzer_does_not_flag_unrelated_select(tmp_path, rules_dir, cve_db_path):
+    """Regression: rule JSONs list class-specific context strings like
+    'SELECT' / 'VALUES' (wifi_serial SQL signals). Pooling them into the
+    global SSID detector caused every binary that contains the word
+    'select' to be tagged as SSID-processing, flooding scans with false
+    positives (observed: ~26k findings on a 3.8k-ELF Crestron firmware,
+    including /bin/busybox).
+
+    A binary whose only "context-ish" strings are SQL keywords must NOT
+    register as SSID context.
+    """
+    import shutil
+    import subprocess
+
+    if shutil.which("gcc") is None and shutil.which("cc") is None:
+        pytest.skip("no C compiler available")
+    cc = "gcc" if shutil.which("gcc") else "cc"
+
+    src = tmp_path / "sql_like.c"
+    src.write_text(
+        '#include <stdio.h>\n'
+        '#include <string.h>\n'
+        '#include <stdlib.h>\n'
+        'int main(int argc, char **argv) {\n'
+        '    char buf[64];\n'
+        '    strcpy(buf, "SELECT * FROM table");\n'
+        '    printf("VALUES (%s)\\n", buf);\n'
+        '    return system(buf);\n'
+        '}\n'
+    )
+    binary = tmp_path / "sql_like"
+    res = subprocess.run([cc, "-O0", "-o", str(binary), str(src)],
+                         capture_output=True)
+    if res.returncode != 0:
+        pytest.skip(f"compile failed: {res.stderr.decode()[:200]}")
+
+    analyzer = BinaryAnalyzer(rules_dir, cve_db_path)
+    analyzer.analyze_file(str(binary))
+
+    # No ssid/essid/wpa/iwconfig strings present, so Step 3 (cross-reference)
+    # must NOT fire. Step 4 may emit low-severity dangerous-import findings.
+    high_or_critical = [f for f in analyzer.findings
+                        if f.severity in ("critical", "high")]
+    assert not high_or_critical, (
+        f"Got {len(high_or_critical)} high/critical findings on a non-WiFi "
+        f"binary. Classes: {[f.vuln_class for f in high_or_critical]}"
+    )
