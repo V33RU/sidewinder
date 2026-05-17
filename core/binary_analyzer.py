@@ -83,27 +83,45 @@ DANGEROUS_FUNCTIONS = {
     },
 }
 
-# Strings that indicate SSID processing context
-# These must be specific enough to avoid matching unrelated binaries
+# Strings that indicate SSID processing context.
+# Every entry here must be specific enough that a substring match in an
+# unrelated identifier is highly unlikely. Generic short tokens like bare
+# "ssid" or "ap_name" are deliberately excluded - they substring-match in
+# UnixProcessID, snmp_get_next_sessid, rl_funmap_names, mmap_name, etc.
+# Real WiFi binaries always contain at least one of the specific tokens
+# below (wpa_supplicant, iwconfig, WLAN_EID_SSID, BSSID, ...), so dropping
+# the generic ones costs no recall.
 SSID_CONTEXT_STRINGS = [
-    b"ssid", b"SSID", b"essid", b"ESSID",
-    b"network_name", b"ap_name", b"bss_info",
+    # Explicit 802.11 identifiers (uppercase BSSID is specific to WiFi;
+    # lowercase bssid is rare outside WiFi code).
+    b"BSSID", b"bssid",
+    b"bss_info",
     b"wifi_scan", b"wlan_scan",
     b"probe_req", b"probe_resp",
-    b"ie_data", b"ie_len", b"ssid_len", b"ssid_ie",
+    b"ssid_len", b"ssid_ie",
+    # WiFi userspace tools
     b"iwconfig", b"iwpriv", b"iwlist",
     b"nmcli", b"wpa_cli", b"wpa_supplicant",
     b"hostapd", b"uci set wireless",
+    # WiFi stack / SDK identifiers
     b"WiFi.softAP", b"wifi_set_opmode",
     b"esp_wifi", b"wifi_config_t",
     b"IEEE80211", b"WLAN_EID_SSID",
     b"wifi_history",
 ]
-# Note: removed overly generic strings that cause false positives:
-# - "INSERT INTO" - matches any SQL-using binary
-# - "beacon" - matches timer/debug/UI beacons, not just WiFi beacons
-# - "scan_result" - matches any scan operation, not just WiFi
+# Note: deliberately excluded entries (cause false positives on real firmware):
+# - "ssid", "SSID"        - substring of UnixProcessID, sessid, etc.
+# - "essid", "ESSID"      - substring of "ProcESSIDunknown" (DBus error names)
+# - "ap_name"             - substring of funmap_names, mmap_name, keymap_name
+# - "network_name"        - matches SMB error codes (STATUS_NETWORK_NAME_*)
+# - "ie_data", "ie_len"   - substring of pie_data, tie_len, etc.
+# - "INSERT INTO"         - matches any SQL-using binary
+# - "beacon"              - matches timer/debug/UI beacons
+# - "scan_result"         - matches any scan operation
 # - "Site Survey", "Wireless Networks" - too broad for binary matching
+# Recall is preserved: every real WiFi binary observed in production firmware
+# contains at least one specific token from the list above (wpa_supplicant,
+# iwconfig, BSSID, WLAN_EID_SSID, ...) alongside any "ssid"-style mentions.
 
 # Shell command strings that may consume SSIDs
 SHELL_CONTEXT_STRINGS = [
